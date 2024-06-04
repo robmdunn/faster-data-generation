@@ -826,18 +826,6 @@ where
     }
 }
 
-// fn get_range_args(col_def: &Value, default_start: u8, default_end: u8) -> (u8, u8) {
-//     if let Some(args) = col_def.get("args").and_then(|a| a.get("range")) {
-//         if let (Some(start), Some(end)) = (
-//             args.get("start").and_then(|s| s.as_u64().map(|v| v as u8)),
-//             args.get("end").and_then(|e| e.as_u64().map(|v| v as u8)),
-//         ) {
-//             return (start, end);
-//         }
-//     }
-//     (default_start, default_end)
-// }
-
 fn get_range_args(col_def: &Value, default_start: usize, default_end: usize) -> (usize, usize) {
     if let Some(args) = col_def.get("args").and_then(|a| a.get("range")) {
         if let (Some(start), Some(end)) = (
