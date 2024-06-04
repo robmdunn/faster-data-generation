@@ -146,7 +146,7 @@ fn main() {
         println!("Time taken to read from Parquet: {:.3} seconds", elapsed);
     } else {
         let start_time = Instant::now();
-        df = generate_from_json(DEFAULT_SCHEMA_FILE, no_rows).unwrap();
+        df = generate_from_json(schema_file, no_rows).unwrap();
         let elapsed = start_time.elapsed().as_secs_f64();
         println!("{:?}", df);
         println!(
