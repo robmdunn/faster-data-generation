@@ -3,6 +3,7 @@ use std::fs;
 
 use serde_json::Value;
 
+#[cfg(feature = "chrono")]
 use chrono;
 
 use polars::prelude::*;
@@ -643,6 +644,7 @@ where
                 .collect();
             Series::new(col_name, data)
         }
+        #[cfg(feature = "chrono")]
         "DateTimeAfter" => {
             let dt = get_args_datetime(col_def, &chrono::Utc::now());
             let data: Vec<String> = (0..no_rows)
@@ -651,6 +653,7 @@ where
                 .collect();
             Series::new(col_name, data)
         }
+        #[cfg(feature = "chrono")]
         "DateTimeBetween" => {
             let (start, end) = get_args_datetimerange(col_def);
             let data: Vec<String> = (0..no_rows)
@@ -694,6 +697,7 @@ where
                 .collect();
             Series::new(col_name, data)
         }
+        #[cfg(feature = "uuid")]
         "UUIDv1" => {
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
@@ -701,6 +705,7 @@ where
                 .collect();
             Series::new(col_name, data)
         }
+        #[cfg(feature = "uuid")]
         "UUIDv3" => {
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
@@ -708,6 +713,7 @@ where
                 .collect();
             Series::new(col_name, data)
         }
+        #[cfg(feature = "uuid")]
         "UUIDv4" => {
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
@@ -715,6 +721,7 @@ where
                 .collect();
             Series::new(col_name, data)
         }
+        #[cfg(feature = "uuid")]
         "UUIDv5" => {
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
