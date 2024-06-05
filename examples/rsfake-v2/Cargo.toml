@@ -18,7 +18,7 @@ fake = { version = "2.9.2", features = ["derive"] }
 bigdecimal = { version = "0.4.3", optional = true}
 chrono = { version = "0.4.38", optional = true }
 clap = { version = "4.4" , default-features = false, features = ["std", "env", "help"]}
-polars = { version = "0.35", features = ["parquet"] }
+polars = { version = "0.40", features = ["parquet", "json", "csv"] }
 rayon = "1.8"
 rust_decimal = { version = "1.35.0", optional = true}
 serde = "1.0.136"

@@ -10,7 +10,8 @@ mod generate;
 
 use extract::{
     read_partitioned_parquet, read_single_parquet_file, write_dataframe_to_multi_parquet,
-    write_dataframe_to_single_parquet,
+    write_dataframe_to_single_parquet, read_json_file, write_dataframe_to_json,
+    read_csv_file, write_dataframe_to_csv,
 };
 use generate::generate_from_json;
 
@@ -73,6 +74,14 @@ fn parse_cli_arguments() -> Command {
                 .value_name("INPUT_PATH")
                 .help("Input path to read from"),
         )
+        .arg(
+            Arg::new("format")
+                .short('f')
+                .long("format")
+                .value_name("FORMAT")
+                .help("Input/output format (parquet, json, csv)")
+                .default_value("parquet"),
+        )
 }
 
 fn main() {
@@ -105,45 +114,71 @@ fn main() {
 
     let output_path = matches.get_one::<String>("output");
     let input_path = matches.get_one::<String>("input");
+    let format = matches.get_one::<String>("format").expect("Failed to parse format");
 
     // set RAYON_NUM_THREADS in env for Rayon to use
     env::set_var("RAYON_NUM_THREADS", no_threads.to_string());
 
     let mut df: DataFrame;
 
-    // read from parquet if input_path is specified
+    // read from specified format if input_path is provided
     if let Some(input_path) = input_path {
         let start_time = Instant::now();
         let path = Path::new(input_path);
 
-        df = if path.is_dir() {
-            match read_partitioned_parquet(input_path) {
-                Ok(data) => data,
-                Err(e) => {
-                    println!("Error reading partitioned Parquet: {:?}", e);
+        df = match format.as_str() {
+            "parquet" => {
+                if path.is_dir() {
+                    match read_partitioned_parquet(input_path) {
+                        Ok(data) => data,
+                        Err(e) => {
+                            println!("Error reading partitioned Parquet: {:?}", e);
+                            return;
+                        }
+                    }
+                } else if path.is_file() {
+                    match read_single_parquet_file(input_path) {
+                        Ok(data) => data,
+                        Err(e) => {
+                            println!("Error reading single Parquet file: {:?}", e);
+                            return;
+                        }
+                    }
+                } else {
+                    println!(
+                        "Error: Input path \"{}\" is neither a file nor a directory",
+                        input_path
+                    );
                     return;
                 }
             }
-        } else if path.is_file() {
-            match read_single_parquet_file(input_path) {
-                Ok(data) => data,
-                Err(e) => {
-                    println!("Error reading single Parquet file: {:?}", e);
-                    return;
+            "json" => {
+                match read_json_file(input_path) {
+                    Ok(data) => data,
+                    Err(e) => {
+                        println!("Error reading JSON file: {:?}", e);
+                        return;
+                    }
                 }
             }
-        } else {
-            // input path is neither a file nor a directory
-            println!(
-                "Error: Input path \"{}\" is neither a file nor a directory",
-                input_path
-            );
-            return;
+            "csv" => {
+                match read_csv_file(input_path) {
+                    Ok(data) => data,
+                    Err(e) => {
+                        println!("Error reading CSV file: {:?}", e);
+                        return;
+                    }
+                }
+            }
+            _ => {
+                println!("Unsupported input format: {}", format);
+                return;
+            }
         };
 
         let elapsed = start_time.elapsed().as_secs_f64();
         println!("{:?}", df);
-        println!("Time taken to read from Parquet: {:.3} seconds", elapsed);
+        println!("Time taken to read from {}: {:.3} seconds", format, elapsed);
     } else {
         let start_time = Instant::now();
         df = generate_from_json(schema_file, no_rows).unwrap();
@@ -156,48 +191,69 @@ fn main() {
         println!("--- {:.3} seconds ---", elapsed);
     }
 
-    // write to parquet if output_path is specified
+    // write to specified format if output_path is provided
     if let Some(output_path) = output_path {
-        let path = Path::new(output_path);
-        let mut is_partitioned = false;
-
-        // Check if the path contains a "/" indicating a multi-parquet file
-        if path.to_str().unwrap_or("").contains("/") {
-            is_partitioned = true;
-
-            // Check if a file with the same base name already exists
-            let base_path = Path::new(output_path.trim_end_matches('/'));
-            if base_path.exists() && base_path.is_file() {
-                println!(
-                    "Error: A file with the name '{}' already exists.",
-                    base_path.display()
-                );
-                return;
-            }
-        }
-
         let start_time: Instant;
         let elapsed: f64;
 
-        if is_partitioned {
-            // partitioned parquet file
-            println!(
-                "Output directory for multi-parquet file data: {}",
-                output_path
-            );
-            let dataset_id = "0";
-            let chunk_size = no_rows / no_threads;
-            start_time = Instant::now();
-            let _ = write_dataframe_to_multi_parquet(&mut df, dataset_id, &output_path, chunk_size)
-                .unwrap();
-            elapsed = start_time.elapsed().as_secs_f64();
-        } else {
-            // single parquet file
-            println!("Output file for single-parquet file data: {}", output_path);
-            start_time = Instant::now();
-            let _ = write_dataframe_to_single_parquet(&mut df, &output_path).unwrap();
-            elapsed = start_time.elapsed().as_secs_f64();
-        }
-        println!("Time taken to write to Parquet: {:.3} seconds", elapsed);
+        match format.as_str() {
+            "parquet" => {
+                let path = Path::new(output_path);
+                let mut is_partitioned = false;
+
+                // Check if the path contains a "/" indicating a multi-parquet file
+                if path.to_str().unwrap_or("").contains("/") {
+                    is_partitioned = true;
+
+                    // Check if a file with the same base name already exists
+                    let base_path = Path::new(output_path.trim_end_matches('/'));
+                    if base_path.exists() && base_path.is_file() {
+                        println!(
+                            "Error: A file with the name '{}' already exists.",
+                            base_path.display()
+                        );
+                        return;
+                    }
+                }
+
+                if is_partitioned {
+                    // partitioned parquet file
+                    println!(
+                        "Output directory for multi-parquet file data: {}",
+                        output_path
+                    );
+                    let dataset_id = "0";
+                    let chunk_size = no_rows / no_threads;
+                    start_time = Instant::now();
+                    let _ = write_dataframe_to_multi_parquet(&mut df, dataset_id, &output_path, chunk_size)
+                        .unwrap();
+                    elapsed = start_time.elapsed().as_secs_f64();
+                } else {
+                    // single parquet file
+                    println!("Output file for single-parquet file data: {}", output_path);
+                    start_time = Instant::now();
+                    let _ = write_dataframe_to_single_parquet(&mut df, &output_path).unwrap();
+                    elapsed = start_time.elapsed().as_secs_f64();
+                }
+            }
+            "json" => {
+                println!("Output JSON file: {}", output_path);
+                start_time = Instant::now();
+                let _ = write_dataframe_to_json(&mut df, output_path).unwrap();
+                elapsed = start_time.elapsed().as_secs_f64();
+            }
+            "csv" => {
+                println!("Output CSV file: {}", output_path);
+                start_time = Instant::now();
+                let _ = write_dataframe_to_csv(&mut df, output_path).unwrap();
+                elapsed = start_time.elapsed().as_secs_f64();
+            }
+            _ => {
+                println!("Unsupported output format: {}", format);
+                return;
+            }
+        };
+
+        println!("Time taken to write to {}: {:.3} seconds", format, elapsed);
     }
 }

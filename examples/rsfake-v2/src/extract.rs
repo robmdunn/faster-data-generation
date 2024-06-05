@@ -1,9 +1,9 @@
 use std::error::Error;
 use std::fs::{self, File};
 use std::path::Path;
+use std::io::{BufWriter, Write};
 
 use polars::prelude::*;
-use std::io::BufWriter;
 
 pub fn write_dataframe_to_single_parquet(
     df: &mut DataFrame,
@@ -129,4 +129,34 @@ pub fn read_partitioned_parquet(base_dir: &str) -> Result<DataFrame, Box<dyn Err
     }
 
     Ok(combined_df)
+}
+
+pub fn read_json_file(file_path: &str) -> Result<DataFrame, Box<dyn Error>> {
+    let mut file = File::open(file_path)?;
+    let df = JsonReader::new(&mut file).finish()?;
+    Ok(df)
+}
+
+pub fn write_dataframe_to_json(df: &mut DataFrame, file_path: &str) -> Result<(), Box<dyn Error>> {
+    let mut file = File::create(file_path)?;
+    let mut writer = BufWriter::new(&mut file);
+    JsonWriter::new(&mut writer)
+        .with_json_format(JsonFormat::Json)
+        .finish(df)?;
+    writer.flush()?;
+    Ok(())
+}
+
+pub fn read_csv_file(file_path: &str) -> Result<DataFrame, Box<dyn Error>> {
+    let file = File::open(file_path)?;
+    let df = CsvReader::new(file).finish()?;
+    Ok(df)
+}
+
+pub fn write_dataframe_to_csv(df: &mut DataFrame, file_path: &str) -> Result<(), Box<dyn Error>> {
+    let mut file = File::create(file_path)?;
+    let mut writer = BufWriter::new(&mut file);
+    CsvWriter::new(&mut writer).finish(df)?;
+    writer.flush()?;
+    Ok(())
 }
