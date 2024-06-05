@@ -79,9 +79,19 @@ fn parse_cli_arguments() -> Command {
                 .short('f')
                 .long("format")
                 .value_name("FORMAT")
-                .help("Input/output format (parquet, json, csv)")
+                .help("Output format (parquet, json, csv)")
                 .default_value("parquet"),
         )
+}
+
+fn detect_input_format(input_path: &str) -> Option<&str> {
+    let path = Path::new(input_path);
+    path.extension().and_then(|ext| ext.to_str()).map(|ext| match ext {
+        "parquet" => "parquet",
+        "json" => "json",
+        "csv" => "csv",
+        _ => "parquet",
+    })
 }
 
 fn main() {
@@ -114,7 +124,7 @@ fn main() {
 
     let output_path = matches.get_one::<String>("output");
     let input_path = matches.get_one::<String>("input");
-    let format = matches.get_one::<String>("format").expect("Failed to parse format");
+    let output_format = matches.get_one::<String>("format").expect("Failed to parse output format");
 
     // set RAYON_NUM_THREADS in env for Rayon to use
     env::set_var("RAYON_NUM_THREADS", no_threads.to_string());
@@ -126,7 +136,9 @@ fn main() {
         let start_time = Instant::now();
         let path = Path::new(input_path);
 
-        df = match format.as_str() {
+        let input_format = detect_input_format(input_path).unwrap_or("parquet");
+
+        df = match input_format {
             "parquet" => {
                 if path.is_dir() {
                     match read_partitioned_parquet(input_path) {
@@ -171,14 +183,14 @@ fn main() {
                 }
             }
             _ => {
-                println!("Unsupported input format: {}", format);
+                println!("Unsupported input format: {}", input_format);
                 return;
             }
         };
 
         let elapsed = start_time.elapsed().as_secs_f64();
         println!("{:?}", df);
-        println!("Time taken to read from {}: {:.3} seconds", format, elapsed);
+        println!("Time taken to read from {}: {:.3} seconds", input_format, elapsed);
     } else {
         let start_time = Instant::now();
         df = generate_from_json(schema_file, no_rows).unwrap();
@@ -196,7 +208,7 @@ fn main() {
         let start_time: Instant;
         let elapsed: f64;
 
-        match format.as_str() {
+        match output_format.as_str() {
             "parquet" => {
                 let path = Path::new(output_path);
                 let mut is_partitioned = false;
@@ -249,11 +261,11 @@ fn main() {
                 elapsed = start_time.elapsed().as_secs_f64();
             }
             _ => {
-                println!("Unsupported output format: {}", format);
+                println!("Unsupported output format: {}", output_format);
                 return;
             }
         };
 
-        println!("Time taken to write to {}: {:.3} seconds", format, elapsed);
+        println!("Time taken to write to {}: {:.3} seconds", output_format, elapsed);
     }
 }
