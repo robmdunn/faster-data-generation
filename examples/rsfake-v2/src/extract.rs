@@ -17,7 +17,7 @@ pub fn write_dataframe_to_single_parquet(
 
 pub fn cleanup_dataset_parquet_files(dataset_dir: &str) -> Result<(), Box<dyn Error>> {
     if Path::new(&dataset_dir).exists() {
-        for entry in fs::read_dir(&dataset_dir)? {
+        for entry in fs::read_dir(dataset_dir)? {
             let path = entry?.path();
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("parquet") {
                 fs::remove_file(path)?;
@@ -45,7 +45,7 @@ pub fn write_dataframe_chunk_to_parquet(
     let file_path = format!("{}/part-{:05}.parquet", dataset_dir, part_number);
 
     // Write the DataFrame chunk to the Parquet file
-    let file = File::create(&file_path)?;
+    let file = File::create(file_path)?;
     let writer = BufWriter::new(file);
     ParquetWriter::new(writer).finish(df_chunk)?;
     Ok(())
@@ -68,9 +68,9 @@ pub fn write_dataframe_to_multi_parquet(
     }
 
     let n_rows = df.height();
-    let mut part_number = 0;
+    // let part_number = 0;
 
-    for start in (0..n_rows).step_by(chunk_size) {
+    for (part_number, start) in (0..n_rows).step_by(chunk_size).enumerate() {
         let end = std::cmp::min(start + chunk_size, n_rows);
         let chunk = df.slice(start as i64, end - start);
 
@@ -79,7 +79,7 @@ pub fn write_dataframe_to_multi_parquet(
 
         // write the chunk
         write_dataframe_chunk_to_parquet(&mut chunk_mut, dataset_id, base_dir, part_number)?;
-        part_number += 1;
+        // part_number += 1;
     }
     Ok(())
 }
@@ -119,7 +119,7 @@ pub fn read_partitioned_parquet(base_dir: &str) -> Result<DataFrame, Box<dyn Err
     read_parquet_files(base_path, &mut dataframes)?;
 
     // Iteratively vstack DataFrames
-    let mut combined_df = match dataframes.get(0) {
+    let mut combined_df = match dataframes.first() {
         Some(df) => df.clone(),
         None => return Err("No dataframes found".into()),
     };

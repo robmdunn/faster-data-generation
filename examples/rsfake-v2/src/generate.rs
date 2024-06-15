@@ -3,8 +3,8 @@ use std::fs;
 
 use serde_json::Value;
 
-#[cfg(feature = "chrono")]
-use chrono;
+// #[cfg(feature = "chrono")]
+// use chrono;
 
 use polars::prelude::*;
 use rayon::prelude::*;
@@ -863,11 +863,11 @@ fn get_args_datetime(col_def: &Value, default: &chrono::DateTime<chrono::Utc>) -
     if let Some(args) = col_def.get("args") {
         if let Some(dt) = args.get("dt").and_then(|d| d.as_str()) {
             return chrono::DateTime::parse_from_rfc3339(dt)
-                .unwrap_or_else(|_| default.clone().into())
+                .unwrap_or_else(|_| (*default).into())
                 .with_timezone(&chrono::Utc);
         }
     }
-    default.clone()
+    *default
 }
 
 fn get_args_datetimerange(
@@ -886,10 +886,10 @@ fn get_args_datetimerange(
             args.get("end").and_then(|e| e.as_str()),
         ) {
             let start_dt = chrono::DateTime::parse_from_rfc3339(start)
-                .unwrap_or_else(|_| default_start.clone().into())
+                .unwrap_or_else(|_| default_start.into())
                 .with_timezone(&chrono::Utc);
             let end_dt = chrono::DateTime::parse_from_rfc3339(end)
-                .unwrap_or_else(|_| default_end.clone().into())
+                .unwrap_or_else(|_| default_end.into())
                 .with_timezone(&chrono::Utc);
             return (start_dt, end_dt);
         }

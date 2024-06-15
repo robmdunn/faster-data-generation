@@ -214,7 +214,7 @@ fn main() {
                 let mut is_partitioned = false;
 
                 // Check if the path contains a "/" indicating a multi-parquet file
-                if path.to_str().unwrap_or("").contains("/") {
+                if path.to_str().unwrap_or("").contains('/') {
                     is_partitioned = true;
 
                     // Check if a file with the same base name already exists
@@ -237,27 +237,27 @@ fn main() {
                     let dataset_id = "0";
                     let chunk_size = no_rows / no_threads;
                     start_time = Instant::now();
-                    let _ = write_dataframe_to_multi_parquet(&mut df, dataset_id, &output_path, chunk_size)
+                    write_dataframe_to_multi_parquet(&df, dataset_id, output_path, chunk_size)
                         .unwrap();
                     elapsed = start_time.elapsed().as_secs_f64();
                 } else {
                     // single parquet file
                     println!("Output file for single-parquet file data: {}", output_path);
                     start_time = Instant::now();
-                    let _ = write_dataframe_to_single_parquet(&mut df, &output_path).unwrap();
+                    write_dataframe_to_single_parquet(&mut df, output_path).unwrap();
                     elapsed = start_time.elapsed().as_secs_f64();
                 }
             }
             "json" => {
                 println!("Output JSON file: {}", output_path);
                 start_time = Instant::now();
-                let _ = write_dataframe_to_json(&mut df, output_path).unwrap();
+                write_dataframe_to_json(&mut df, output_path).unwrap();
                 elapsed = start_time.elapsed().as_secs_f64();
             }
             "csv" => {
                 println!("Output CSV file: {}", output_path);
                 start_time = Instant::now();
-                let _ = write_dataframe_to_csv(&mut df, output_path).unwrap();
+                write_dataframe_to_csv(&mut df, output_path).unwrap();
                 elapsed = start_time.elapsed().as_secs_f64();
             }
             _ => {
