@@ -1,8 +1,64 @@
 {
   "columns": [
     {
-      "name": "id",
+      "name": "u64",
       "type": "u64"
+    },
+    {
+      "name": "id",
+      "type": "Int64",
+      "args": {
+        "range": {
+          "start": -10000000,
+          "end": 10000000
+        }
+      }
+    },
+    {
+      "name": "age",
+      "type": "Int32",
+      "args": {
+        "range": {
+          "start": 18,
+          "end": 65
+        }
+      }
+    },
+    {
+      "name": "score",
+      "type": "Float",
+      "args": {
+        "range": {
+          "start": -100.0,
+          "end": 100.0
+        }
+      }
+    },
+    {
+      "name": "price",
+      "type": "Double",
+      "args": {
+        "range": {
+          "start": 10.0,
+          "end": 999.99
+        }
+      }
+    },
+    {
+      "name": "bigint",
+      "type": "Int64"
+    },
+    {
+      "name": "smallint",
+      "type": "Int32"
+    },
+    {
+      "name": "smallfloat",
+      "type": "Float"
+    },
+    {
+      "name": "bigfloat",
+      "type": "Double"
     },
     {
       "name": "word",

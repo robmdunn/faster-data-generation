@@ -197,7 +197,7 @@ fn main() {
         let elapsed = start_time.elapsed().as_secs_f64();
         println!("{:?}", df);
         println!(
-            "Time taken to generate {no_rows} people into a dataframe using \
+            "Time taken to generate {no_rows} rows into a dataframe using \
             {no_threads} threads:"
         );
         println!("--- {:.3} seconds ---", elapsed);

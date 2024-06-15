@@ -1,23 +1,31 @@
 use fake::{Fake, Faker};
+use rand::Rng;
 use std::fs;
 
 use serde_json::Value;
 
-// #[cfg(feature = "chrono")]
-// use chrono;
-
 use polars::prelude::*;
 use rayon::prelude::*;
 
+#[cfg(feature = "bigdecimal")]
+use fake::bigdecimal::*;
+#[cfg(feature = "rust_decimal")]
+use fake::decimal::*;
 use fake::faker::address::raw::*;
 use fake::faker::automotive::raw::*;
 use fake::faker::barcode::raw::*;
 use fake::faker::boolean::raw::*;
+#[cfg(feature = "chrono")]
+use fake::faker::chrono::raw::*;
+#[cfg(feature = "random_color")]
+use fake::faker::color::raw::*;
 use fake::faker::company::raw::*;
 use fake::faker::creditcard::raw::*;
 use fake::faker::currency::raw::*;
-use fake::faker::finance::raw::*;
 use fake::faker::filesystem::raw::*;
+use fake::faker::finance::raw::*;
+#[cfg(feature = "http")]
+use fake::faker::http::raw::*;
 use fake::faker::internet::raw::*;
 use fake::faker::job::raw::*;
 use fake::faker::job::raw::Title as JobTitle;
@@ -26,18 +34,8 @@ use fake::faker::name::raw::*;
 use fake::faker::number::raw::*;
 use fake::faker::phone_number::raw::*;
 use fake::locales::*;
-#[cfg(feature = "random_color")]
-use fake::faker::color::raw::*;
-#[cfg(feature = "http")]
-use fake::faker::http::raw::*;
-#[cfg(feature = "chrono")]
-use fake::faker::chrono::raw::*;
 #[cfg(feature = "uuid")]
 use fake::uuid::*;
-#[cfg(feature = "rust_decimal")]
-use fake::decimal::*;
-#[cfg(feature = "bigdecimal")]
-use fake::bigdecimal::*;
 
 pub fn load_json(json_file: &str) -> Result<Value, Box<dyn std::error::Error>> {
     let json_str = fs::read_to_string(json_file)?;
@@ -87,6 +85,50 @@ where
                 .into_par_iter()
                 .map(|_| Faker.fake::<u64>())
                 .collect::<Vec<u64>>();
+            Series::new(col_name, data)
+        }
+        "Int32" => {
+            let (start, end) = get_range_args_i32(col_def, i32::MIN, i32::MAX);
+            let data: Vec<i32> = (0..no_rows)
+                .into_par_iter()
+                .map(|_| {
+                    let mut rng = rand::thread_rng();
+                    rng.gen_range(start..=end)
+                })
+                .collect();
+            Series::new(col_name, data)
+        }
+        "Int64" => {
+            let (start, end) = get_range_args_i64(col_def, i64::MIN, i64::MAX);
+            let data: Vec<i64> = (0..no_rows)
+                .into_par_iter()
+                .map(|_| {
+                    let mut rng = rand::thread_rng();
+                    rng.gen_range(start..=end)
+                })
+                .collect();
+            Series::new(col_name, data)
+        }
+        "Float" => {
+            let (start, end) = get_range_args_f32(col_def, 0.0, 1.0);
+            let data: Vec<f32> = (0..no_rows)
+                .into_par_iter()
+                .map(|_| {
+                    let mut rng = rand::thread_rng();
+                    rng.gen_range(start..end)
+                })
+                .collect();
+            Series::new(col_name, data)
+        }
+        "Double" => {
+            let (start, end) = get_range_args_f64(col_def, 0.0, 1.0);
+            let data: Vec<f64> = (0..no_rows)
+                .into_par_iter()
+                .map(|_| {
+                    let mut rng = rand::thread_rng();
+                    rng.gen_range(start..end)
+                })
+                .collect();
             Series::new(col_name, data)
         }
         "Word" => {
@@ -640,7 +682,11 @@ where
             let dt = get_args_datetime(col_def, &chrono::Utc::now());
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
-                .map(|_| DateTimeBefore(locale, dt).fake::<chrono::DateTime<chrono::Utc>>().to_rfc3339())
+                .map(|_| {
+                    DateTimeBefore(locale, dt)
+                        .fake::<chrono::DateTime<chrono::Utc>>()
+                        .to_rfc3339()
+                })
                 .collect();
             Series::new(col_name, data)
         }
@@ -649,7 +695,11 @@ where
             let dt = get_args_datetime(col_def, &chrono::Utc::now());
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
-                .map(|_| DateTimeAfter(locale, dt).fake::<chrono::DateTime<chrono::Utc>>().to_rfc3339())
+                .map(|_| {
+                    DateTimeAfter(locale, dt)
+                        .fake::<chrono::DateTime<chrono::Utc>>()
+                        .to_rfc3339()
+                })
                 .collect();
             Series::new(col_name, data)
         }
@@ -658,7 +708,11 @@ where
             let (start, end) = get_args_datetimerange(col_def);
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
-                .map(|_| DateTimeBetween(locale, start, end).fake::<chrono::DateTime<chrono::Utc>>().to_rfc3339())
+                .map(|_| {
+                    DateTimeBetween(locale, start, end)
+                        .fake::<chrono::DateTime<chrono::Utc>>()
+                        .to_rfc3339()
+                })
                 .collect();
             Series::new(col_name, data)
         }
@@ -758,7 +812,6 @@ where
             Series::new(col_name, data)
         }
         #[cfg(feature = "rust_decimal")]
-        #[cfg(feature = "rust_decimal")]
         "Decimal" => {
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
@@ -802,7 +855,11 @@ where
         "PositiveBigDecimal" => {
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
-                .map(|_| PositiveBigDecimal.fake::<bigdecimal::BigDecimal>().to_string())
+                .map(|_| {
+                    PositiveBigDecimal
+                        .fake::<bigdecimal::BigDecimal>()
+                        .to_string()
+                })
                 .collect();
             Series::new(col_name, data)
         }
@@ -810,7 +867,11 @@ where
         "NegativeBigDecimal" => {
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
-                .map(|_| NegativeBigDecimal.fake::<bigdecimal::BigDecimal>().to_string())
+                .map(|_| {
+                    NegativeBigDecimal
+                        .fake::<bigdecimal::BigDecimal>()
+                        .to_string()
+                })
                 .collect();
             Series::new(col_name, data)
         }
@@ -818,7 +879,11 @@ where
         "NoBigDecimalPoints" => {
             let data: Vec<String> = (0..no_rows)
                 .into_par_iter()
-                .map(|_| NoBigDecimalPoints.fake::<bigdecimal::BigDecimal>().to_string())
+                .map(|_| {
+                    NoBigDecimalPoints
+                        .fake::<bigdecimal::BigDecimal>()
+                        .to_string()
+                })
                 .collect();
             Series::new(col_name, data)
         }
@@ -829,8 +894,57 @@ where
 fn get_range_args(col_def: &Value, default_start: usize, default_end: usize) -> (usize, usize) {
     if let Some(args) = col_def.get("args").and_then(|a| a.get("range")) {
         if let (Some(start), Some(end)) = (
-            args.get("start").and_then(|s| s.as_u64().map(|v| v as usize)),
+            args.get("start")
+                .and_then(|s| s.as_u64().map(|v| v as usize)),
             args.get("end").and_then(|e| e.as_u64().map(|v| v as usize)),
+        ) {
+            return (start, end);
+        }
+    }
+    (default_start, default_end)
+}
+
+fn get_range_args_i32(col_def: &Value, default_start: i32, default_end: i32) -> (i32, i32) {
+    if let Some(args) = col_def.get("args").and_then(|a| a.get("range")) {
+        if let (Some(start), Some(end)) = (
+            args.get("start").and_then(|s| s.as_i64().map(|v| v as i32)),
+            args.get("end").and_then(|e| e.as_i64().map(|v| v as i32)),
+        ) {
+            return (start, end);
+        }
+    }
+    (default_start, default_end)
+}
+
+fn get_range_args_i64(col_def: &Value, default_start: i64, default_end: i64) -> (i64, i64) {
+    if let Some(args) = col_def.get("args").and_then(|a| a.get("range")) {
+        if let (Some(start), Some(end)) = (
+            args.get("start").and_then(|s| s.as_i64()),
+            args.get("end").and_then(|e| e.as_i64()),
+        ) {
+            return (start, end);
+        }
+    }
+    (default_start, default_end)
+}
+
+fn get_range_args_f32(col_def: &Value, default_start: f32, default_end: f32) -> (f32, f32) {
+    if let Some(args) = col_def.get("args").and_then(|a| a.get("range")) {
+        if let (Some(start), Some(end)) = (
+            args.get("start").and_then(|s| s.as_f64().map(|v| v as f32)),
+            args.get("end").and_then(|e| e.as_f64().map(|v| v as f32)),
+        ) {
+            return (start, end);
+        }
+    }
+    (default_start, default_end)
+}
+
+fn get_range_args_f64(col_def: &Value, default_start: f64, default_end: f64) -> (f64, f64) {
+    if let Some(args) = col_def.get("args").and_then(|a| a.get("range")) {
+        if let (Some(start), Some(end)) = (
+            args.get("start").and_then(|s| s.as_f64()),
+            args.get("end").and_then(|e| e.as_f64()),
         ) {
             return (start, end);
         }
@@ -852,14 +966,20 @@ fn get_args_u8(col_def: &Value, default: u8) -> u8 {
         if let Some(ratio) = args.get("ratio").and_then(|r| r.as_u64().map(|v| v as u8)) {
             return ratio;
         }
-        if let Some(precision) = args.get("precision").and_then(|p| p.as_u64().map(|v| v as u8)) {
+        if let Some(precision) = args
+            .get("precision")
+            .and_then(|p| p.as_u64().map(|v| v as u8))
+        {
             return precision;
         }
     }
     default
 }
 
-fn get_args_datetime(col_def: &Value, default: &chrono::DateTime<chrono::Utc>) -> chrono::DateTime<chrono::Utc> {
+fn get_args_datetime(
+    col_def: &Value,
+    default: &chrono::DateTime<chrono::Utc>,
+) -> chrono::DateTime<chrono::Utc> {
     if let Some(args) = col_def.get("args") {
         if let Some(dt) = args.get("dt").and_then(|d| d.as_str()) {
             return chrono::DateTime::parse_from_rfc3339(dt)
