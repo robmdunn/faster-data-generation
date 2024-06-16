@@ -1,22 +1,32 @@
 {
   "columns": [
     {
+      "name": "u32",
+      "type": "u32"
+    },
+    {
       "name": "u64",
       "type": "u64"
     },
     {
-      "name": "id",
-      "type": "Int64",
-      "args": {
-        "range": {
-          "start": -10000000,
-          "end": 10000000
-        }
-      }
+      "name": "i64",
+      "type": "i64"
+    },
+    {
+      "name": "i32",
+      "type": "i32"
+    },
+    {
+      "name": "f32",
+      "type": "f32"
+    },
+    {
+      "name": "f64",
+      "type": "f64"
     },
     {
       "name": "age",
-      "type": "Int32",
+      "type": "u32",
       "args": {
         "range": {
           "start": 18,
@@ -25,40 +35,54 @@
       }
     },
     {
-      "name": "score",
-      "type": "Float",
+      "name": "id",
+      "type": "u64",
       "args": {
         "range": {
-          "start": -100.0,
-          "end": 100.0
+          "start": 0,
+          "end": 8000000000
+        }
+      }
+    },
+    {
+      "name": "large_range",
+      "type": "i64",
+      "args": {
+        "range": {
+          "start": -40000000000,
+          "end": 40000000000
+        }
+      }
+    },
+    {
+      "name": "score",
+      "type": "i32",
+      "args": {
+        "range": {
+          "start": -100,
+          "end": 100
+        }
+      }
+    },
+    {
+      "name": "angle",
+      "type": "f32",
+      "args": {
+        "range": {
+          "start": -180.0,
+          "end": 180.0
         }
       }
     },
     {
       "name": "price",
-      "type": "Double",
+      "type": "f64",
       "args": {
         "range": {
           "start": 10.0,
           "end": 999.99
         }
       }
-    },
-    {
-      "name": "bigint",
-      "type": "Int64"
-    },
-    {
-      "name": "smallint",
-      "type": "Int32"
-    },
-    {
-      "name": "smallfloat",
-      "type": "Float"
-    },
-    {
-      "name": "bigfloat",
-      "type": "Double"
     },
     {
       "name": "word",

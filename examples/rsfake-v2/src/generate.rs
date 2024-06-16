@@ -1,4 +1,4 @@
-use fake::{Fake, Faker};
+use fake::Fake;
 use rand::Rng;
 use std::fs;
 
@@ -80,14 +80,29 @@ where
     L: Data + Sync + Send + Copy,
 {
     match type_name {
-        "u64" => {
-            let data = (0..no_rows)
+        "u32" => {
+            let (start, end) = get_range_args_u32(col_def, u32::MIN, u32::MAX);
+            let data: Vec<u32> = (0..no_rows)
                 .into_par_iter()
-                .map(|_| Faker.fake::<u64>())
+                .map(|_| {
+                    let mut rng = rand::thread_rng();
+                    rng.gen_range(start..=end)
+                })
+                .collect::<Vec<u32>>();
+            Series::new(col_name, data)
+        }
+        "u64" => {
+            let (start, end) = get_range_args_u64(col_def, u64::MIN, u64::MAX);
+            let data: Vec<u64> = (0..no_rows)
+                .into_par_iter()
+                .map(|_| {
+                    let mut rng = rand::thread_rng();
+                    rng.gen_range(start..=end)
+                })
                 .collect::<Vec<u64>>();
             Series::new(col_name, data)
         }
-        "Int32" => {
+        "i32" => {
             let (start, end) = get_range_args_i32(col_def, i32::MIN, i32::MAX);
             let data: Vec<i32> = (0..no_rows)
                 .into_par_iter()
@@ -98,7 +113,7 @@ where
                 .collect();
             Series::new(col_name, data)
         }
-        "Int64" => {
+        "i64" => {
             let (start, end) = get_range_args_i64(col_def, i64::MIN, i64::MAX);
             let data: Vec<i64> = (0..no_rows)
                 .into_par_iter()
@@ -109,7 +124,7 @@ where
                 .collect();
             Series::new(col_name, data)
         }
-        "Float" => {
+        "f32" => {
             let (start, end) = get_range_args_f32(col_def, 0.0, 1.0);
             let data: Vec<f32> = (0..no_rows)
                 .into_par_iter()
@@ -120,7 +135,7 @@ where
                 .collect();
             Series::new(col_name, data)
         }
-        "Double" => {
+        "f64" => {
             let (start, end) = get_range_args_f64(col_def, 0.0, 1.0);
             let data: Vec<f64> = (0..no_rows)
                 .into_par_iter()
@@ -897,6 +912,30 @@ fn get_range_args(col_def: &Value, default_start: usize, default_end: usize) -> 
             args.get("start")
                 .and_then(|s| s.as_u64().map(|v| v as usize)),
             args.get("end").and_then(|e| e.as_u64().map(|v| v as usize)),
+        ) {
+            return (start, end);
+        }
+    }
+    (default_start, default_end)
+}
+
+fn get_range_args_u32(col_def: &Value, default_start: u32, default_end: u32) -> (u32, u32) {
+    if let Some(args) = col_def.get("args").and_then(|a| a.get("range")) {
+        if let (Some(start), Some(end)) = (
+            args.get("start").and_then(|s| s.as_i64().map(|v| v as u32)),
+            args.get("end").and_then(|e| e.as_i64().map(|v| v as u32)),
+        ) {
+            return (start, end);
+        }
+    }
+    (default_start, default_end)
+}
+
+fn get_range_args_u64(col_def: &Value, default_start: u64, default_end: u64) -> (u64, u64) {
+    if let Some(args) = col_def.get("args").and_then(|a| a.get("range")) {
+        if let (Some(start), Some(end)) = (
+            args.get("start").and_then(|s| s.as_i64().map(|v| v as u64)),
+            args.get("end").and_then(|e| e.as_i64().map(|v| v as u64)),
         ) {
             return (start, end);
         }
